@@ -1,0 +1,95 @@
+%help execuation
+              k = 22;
+             incorrect_image1 = reshape(information{k,1}.image_top3_landmarks_incorrect_with_datapoint(1,1:end-1),28,28)';
+               incorrect_image2 = reshape(information{k,1}.image_top3_landmarks_incorrect_with_datapoint(2,1:end-1),28,28)';
+             incorrect_image3 = reshape(information{k,1}.image_top3_landmarks_incorrect_with_datapoint(3,1:end-1),28,28)';
+             incorrect_cc1 = freeman(incorrect_image1);
+             incorrect_cc2 = freeman(incorrect_image2);
+             incorrect_cc3 = freeman(incorrect_image3);
+           
+           figure(1);
+              subplot(3,2,1);
+              imshow(incorrect_image1);
+              title(strcat(num2str(information{k,1}.top_landmark_index_incorrect(1)),'th landmarks'));             
+              subplot(3,2,3);  
+            imshow(incorrect_image2);
+              title(strcat(num2str(information{k,1}.top_landmark_index_incorrect(2)),'th landmarks'));   
+            subplot(3,2,5);
+            imshow(incorrect_image3);
+             title(strcat(num2str(information{k,1}.top_landmark_index_incorrect(3)),'th landmarks'));   
+                    
+           Bound_inc1 = showBoundary(incorrect_image1);
+           Bound_inc2 = showBoundary(incorrect_image2);
+           Bound_inc3 = showBoundary(incorrect_image3);
+            subplot(3,2,2);
+            plot(Bound_inc1(:,2),Bound_inc1(:,1));
+            hold on;
+            plot(incorrect_cc1.x0,incorrect_cc1.y0,'go');
+            hold off;
+            subplot(3,2,4);
+            plot(Bound_inc2(:,2),Bound_inc2(:,1));
+            hold on;
+            plot(incorrect_cc2.x0,incorrect_cc2.y0,'go');
+            hold off;
+            subplot(3,2,6);
+            plot(Bound_inc3(:,2),Bound_inc3(:,1));
+            hold on;
+            plot(incorrect_cc3.x0,incorrect_cc3.y0,'go');
+            hold off;
+      
+                figure(2);
+             correct_image1 = reshape(information{k,1}.image_top3_landmarks_correct_with_datapoint(1,1:end-1),28,28)';
+             correct_image2 = reshape(information{k,1}.image_top3_landmarks_correct_with_datapoint(2,1:end-1),28,28)';   
+            correct_image3 = reshape(information{k,1}.image_top3_landmarks_correct_with_datapoint(3,1:end-1),28,28)';          
+            correct_cc1 = freeman(correct_image1);
+             correct_cc2 = freeman(correct_image2);
+             correct_cc3 = freeman(correct_image3);
+           subplot(3,2,1);
+              imshow(correct_image1);
+               title(strcat(num2str(information{k,1}.top_landmark_index_correct(1)),'th landmarks'));   
+              subplot(3,2,3);  
+                imshow(correct_image2);
+             title(strcat(num2str(information{k,1}.top_landmark_index_correct(2)),'th landmarks'));
+             subplot(3,2,5);  
+            imshow(correct_image3);
+               title(strcat(num2str(information{k,1}.top_landmark_index_correct(3)),'th landmarks'));
+            
+             Bound_c1 = showBoundary(correct_image1);
+           Bound_c2 = showBoundary(correct_image2);
+           Bound_c3 = showBoundary(correct_image3);
+            subplot(3,2,2);
+            plot(Bound_c1(:,2),Bound_c1(:,1));
+            hold on;
+            plot(correct_cc1.x0,correct_cc1.y0,'go');
+            hold off;
+            subplot(3,2,4);
+            plot(Bound_c2(:,2),Bound_c2(:,1));
+              hold on;
+            plot(correct_cc2.x0,correct_cc2.y0,'go');
+            hold off;
+            subplot(3,2,6);
+            plot(Bound_c3(:,2),Bound_c3(:,1));
+             hold on;
+            plot(correct_cc3.x0,correct_cc3.y0,'go');
+            hold off;
+                 
+              figure(3);
+           originalImage = reshape(information{k,1}.image_top3_landmarks_incorrect_with_datapoint(4,1:end-1),28,28)';
+             example_cc = freeman(originalImage);
+              subplot(3,1,1);
+              imshow(originalImage);            
+            subplot(3,1,2);
+             originalBound = showBoundary(originalImage);
+              plot(originalBound(:,2),originalBound(:,1));
+             hold on;
+            plot(example_cc.x0,example_cc.y0,'go');
+            hold off;
+            
+           [dist_incorrect_cc1_exa,v_incc1_exa] = ...
+               EditDistanceWeight(example_cc.code,incorrect_cc1.code,tempWeight);
+           path = findPath(example_cc.code,incorrect_cc1.code,tempWeight);
+          % [dist_incorrect_cc2_exa,v_incc2_exa] = EditDistanceWeight(example_cc.code,incorrect_cc2.code,weightMatrix);
+           %[dist_incorrect_cc3_exa,v_incc3_exa] = EditDistance(example_cc.code,incorrect_cc3.code,weightMatrix);
+          % [dist_correct_cc1_exa,v_ccc1_exa] = EditDistance(example_cc.code,correct_cc1.code,weightMatrix);
+           %[dist_correct_cc2_exa,v_ccc2_exa] = EditDistance(example_cc.code,correct_cc2.code);
+           %[dist_correct_cc3_exa,v_ccc3_exa] = EditDistance(example_cc.code,correct_cc3.code);
