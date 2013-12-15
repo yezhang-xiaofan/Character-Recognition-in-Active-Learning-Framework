@@ -1,7 +1,7 @@
-function [ result ] = findPathWeight(string1,string2,weightMatrix,threshold)
+function [ result ] = findPathWeight1(string1,string2,weightMatrix,threshold)
 %This function finds the path to match string1 to string2 
 %threshold is the width deviation from the diagonal
-    [V,v] = EditDistanceWeight(string1,string2,weightMatrix,threshold);
+    [V,v] = EditDistanceWeight_dig1(string1,string2,weightMatrix,threshold);
    
 [row,column] = size(v);
 path = cell(100,1);

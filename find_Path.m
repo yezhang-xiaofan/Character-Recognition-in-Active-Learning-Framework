@@ -12,6 +12,7 @@ if(intermediate == 0),       %i and j are neighbors
     return;
 end
 if(intermediate==inf),
+    Path = inf;
     return;
 else
     Path = [find_Path(i,intermediate,next,dist),intermediate,find_Path(intermediate,j,next,dist)];

@@ -1,4 +1,4 @@
-%edit distance kernel
+%edit distance based kernel
 numPixel = 28;
 numEle = 40;      %number of example of each class
       %total example * dimension of image

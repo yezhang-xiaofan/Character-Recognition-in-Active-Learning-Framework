@@ -31,66 +31,70 @@ weightMatrix(9,3) = weightMatrix(9,7);
 weightMatrix(9,4) = weightMatrix(9,8);
 %}
 
-% convert sequence of zero to the graph of three
-
-Nodes = [0,2,0,2,0];
-Sequences = [0,2,0,2];
-Graph = zeros(5,5);
-for i = 1:5,
-    Graph(i,i) = 1;
-end
-Graph(1,2) = 1;
-Graph(2,3) = 1;
-Graph(3,4) = 1;
-Graph(4,5) = 1;
-for i = 1:5,
-    for j = 1:i,
-    Graph(i,j) = Graph(j,i);
-    end
-end
+                
+% convert sequence of B to the graph of three
+%{
+Sequences = [6,6,6,6,7,6,5,7,6,5];
+skeleton = zeros(28,28);
+skeleton(10,11) = 1;
+skeleton(10,12) = 1;
+skeleton(11,11) = 1;
+skeleton(11,12) = 1;
+skeleton(12,11) = 1;
+skeleton(12,12) = 1;
+[Graph,Nodes] = skeleton_to_dGraph(skeleton);
 [distance,WeightMatrix,operations,Conversion] = find_smallest_distance(Sequences,Graph,Nodes,weightMatrix);
+%}
 
+%{
+Sequences = [0,6,6,4];
+skeleton = zeros(28,28);
+skeleton(10,10) = 1;
+skeleton(10,11) = 1;
+skeleton(11,11) = 1;
+skeleton(12,11) = 1;
+skeleton(12,10) = 1;
+[Graph,Nodes] = skeleton_to_dGraph(skeleton);
+[distance,WeightMatrix,operations,Conversion] = find_smallest_distance(Sequences,Graph,Nodes,weightMatrix);
+%}
 
 %convert sequence of zero to the graph of zero 
 %{
-Nodes = [0,2,0,2];
-Sequences = [0,2,0,2];
-Graph = zeros(4,4);
-for i = 1:4,
-    Graph(i,i) = 1;
-end
-Graph(1,2) = 1;
-Graph(1,4) = 1;
-Graph(2,3) = 1;
-Graph(3,4) = 1;
-for i = 1:4,
-    for j = 1:i,
-        Graph(i,j) = Graph(j,i);
-    end
-end
-[distance,WeightMatrix,operations,Conversion] = find_smallest_distance(Sequences,Graph,Nodes,weightMatrix);
-     %}       
-            %{
-Graph = zeros(5,5);
-for i = 1:5,
-    Graph(i,i) = 1;
-end
-Graph(1,3) = 1;
-Graph(2,3) = 1;
-Graph(2,4) = 1;
-Graph(3,5) = 1;
-Graph(4,5) = 1;
-%Graph(3,4) = 1;
-for i= 1:5,
-    for j = 1:i,
-        Graph(i,j) = Graph(j,i);
-    end
-end
-Nodes = [1,2,4,4,2];
+Skeleton = zeros(28,28);
+Skeleton(10,10) = 1;
+Skeleton(10,11) = 1;
+Skeleton(11,10) = 1;
+Skeleton(11,11) = 1;
+[Graph,Nodes] = skeleton_to_dGraph(Skeleton);
+Sequences = [0,6,4,2];
 
-Sequence = [1,4,2,4,2];
+[distance,WeightMatrix,operations,Conversion] = find_smallest_distance(Sequences,Graph,Nodes,weightMatrix);
+ %}
+
+%convert the sequence zero to the graph of 1
+
+Skeleton = zeros(28,28);
+Skeleton(10,10) = 1;
+Skeleton(11,10) = 1;
+Skeleton(12,10) = 1;
+[Graph,Nodes] = skeleton_to_dGraph(Skeleton);
+Sequences = [0,6,4,2];
+%[distance,WeightMatrix,operations,Conversion] = find_smallest_distance(Sequences,Graph,Nodes,weightMatrix);
+
+[distance,WeightMatrix,operations,Conversion] = fast_shortest_distance(Sequences,Graph,Nodes,weightMatrix,14);
+%{
+Skeleton = zeros(28,28);
+Skeleton(10,10) = 1;
+Skeleton(10,11) = 1;
+Skeleton(11,11) = 1;
+Skeleton(11,10) = 1;
+Skeleton(12,10) = 1;
+Skeleton(12,11) = 1;
+[Graph,Nodes] = skeleton_to_dGraph(Skeleton);
+Sequence = [0,6,4,0,6,4];
 [distance,WeightMatrix] = find_smallest_distance(Sequence,Graph,Nodes,weightMatrix);
 %}
+
 
 %test the function 'skeleton_to_Graph'. 
 %skeleton = zeros(28,28);
@@ -105,6 +109,8 @@ for i = 10:18,
     skeleton(15,i) = 1;
 end
 %}
+
+%{
 skeleton = zeros(28,28);
 for i = 10:14,
     skeleton(i,10) = 1;
@@ -116,5 +122,32 @@ skeleton(10,11) = 1;
 skeleton(14,11) = 1;
 skeleton(12,11) = 1;
 
-Graph = skeleton_to_Graph(skeleton);
+Graph = skeleton_to_dGraph(skeleton);
+%}
+
+%{
+Skeleton = zeros(28,28);
+for i = 10:12,
+    Skeleton(i,10) = 1;
+end
+Skeleton(11,9) = 1;
+Skeleton(11,11) = 1;
+Graph = skeleton_to_dGraph(Skeleton);
+%}
+
+%test 'FloydWarshall'
+%{
+Nodes = [1,4,5,3,4,3];
+Graph = zeros(6,6);
+Graph(1,2) = 1;
+Graph(2,3) = 1;
+Graph(3,4) = 1;
+Graph(4,5) = 1;
+Graph(3,6) = 1;
+for i = 1:6,
+    Graph(i,i) = 1;
+end
+FloydWarshall(Graph,Nodes,weightMatrix);
+%}
+
 

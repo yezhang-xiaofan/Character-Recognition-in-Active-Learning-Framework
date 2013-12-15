@@ -32,6 +32,19 @@ for k = 1:num_Nodes,
         end
     end
 end
+%{
+for i = 1:num_Nodes,
+    for j = 1:num_Nodes,
+        if(dist(i,j) == inf),
+            
+            %if two nodes are not connected by a path, set the distance
+            %between them large
+            dist(i,j) = 15;
+        end
+    end
+end
+%}
+disp('finish');
 
 
 

@@ -14,7 +14,7 @@ addpath('/Users/zhangye/Documents/Study/cmu/study/research/handwritten/');
 training_Graph = {};
 for i = 1:size(trainData,1),  
     train_Image = reshape(trainData(i,1:end-1),28,28)';
-    [Graph,Nodes]= skeleton_to_Graph(obtainSkeleton(train_Image));
+    [Graph,Nodes]= skeleton_to_dGraph(obtainSkeleton(train_Image));
     training_Graph{1,i}.Graph = Graph;
     training_Graph{1,i}.Nodes = Nodes;
 end
@@ -30,30 +30,16 @@ weightMatrix = [0.00,6.31,7.22,8.61,8.61,9.71,7.14,6.82,3.38;
                 6.16,7.37,7.77,15,15,8.47,5.83,0.00,2.78;
                 3.69,3.77,3.67,4.18,3.52,3.66,3.88,4.18,15];
             
-%convert the kernel matrix to make 0==4, 1==5, 2==6, 3==7 
-for i = 1:9,
-        weightMatrix(i,5) = weightMatrix(i,1);
-        weightMatrix(i,6) = weightMatrix(i,2);
-        weightMatrix(i,7) = weightMatrix(i,3);
-        weightMatrix(i,8) = weightMatrix(i,4);
-end
-
-weightMatrix(5,9) = weightMatrix(1,9);
-weightMatrix(6,9) = weightMatrix(2,9);
-weightMatrix(7,9) = weightMatrix(3,9);
-weightMatrix(8,9) = weightMatrix(4,9);
-weightMatrix(9,1) = weightMatrix(9,5);
-weightMatrix(9,2) = weightMatrix(9,6);
-weightMatrix(9,3) = weightMatrix(9,7);
-weightMatrix(9,4) = weightMatrix(9,8);
-
+    threshold = inf;
     sigma = 150^2;
     kernelMatrix = zeros(numEle*10,size(Sequences,2));
-    for i = 1:size(trainData,1),
-       for j = 1:size(Sequences,2),
-            distance = find_smallest_distance(Sequences{1,j},...
-                training_Graph{1,i}.Graph,training_Graph{1,i}.Nodes,weightMatrix);
+    for i = 3:size(trainData,1),
+       for j = 5:size(Sequences,2),
+            tic;
+            distance = fast_shortest_distance(Sequences{1,j},...
+                training_Graph{1,i}.Graph,training_Graph{1,i}.Nodes,weightMatrix,threshold);
             kernelMatrix(i,j) = exp(-distance^2/sigma);
+            toc;
             %kernelMatrix(i,j) = d;
        end
        kernelMatrix(i,end) = trainData(i,end);

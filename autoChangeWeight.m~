@@ -1,5 +1,4 @@
-%add landmarks
-%automatically adjust the weights on the large dataset
+%automatically adjust the weights
 numPixel = 28;
 numEle = 40;      %number of examples of each class
       %total example * dimension of image
@@ -62,8 +61,6 @@ lanMatrix = newMatrix(lanIndex,:);
 backupLanMatrix = newMatrix(backupLanIndex,:);
 %}
 
-%get data from sampleddata1
-%{
 load('sampleddata1/trainData.mat');
 load('sampleddata1/trainIndex.mat');
 load('sampleddata1/lanMatrix.mat');
@@ -72,14 +69,7 @@ load('sampleddata1/backupLanMatrix.mat');
 load('sampleddata1/backupLanIndex.mat');
 load('sampleddata1/newMatrix.mat');
 load('sampleddata1/allLanIndex.mat');
-%}
 
-%get data from large testData
-load('largeset/lanMatrix.mat');
-load('largeset/lanIndex.mat');
-load('largeset/newMatrix.mat');
-load('largeset/allLanIndex.mat');
-load('largeset/testData.mat')
 %FreemanCode Distance,
 lanFreeman = cell(size(lanMatrix,1),1);
 for i = 1:size(lanMatrix,1),
@@ -99,7 +89,7 @@ end
 
 iteration = 50;
 accuracyArray = zeros(1,iteration);
-maxAccuracy = 0.0;
+minAccuracy = 0.0;
 
 %{
 weightMatrix = [0.00,6.31,7.22,8.61,8.61,9.71,7.14,6.82,3.38;
@@ -115,20 +105,19 @@ weightMatrix = [0.00,6.31,7.22,8.61,8.61,9.71,7.14,6.82,3.38;
 
 load('sampleddata1/optAutoWeight1.mat');
 weightMatrix = optimalWeight;
-%optimalWeight = zeros(9,9);
-sigma = (2.36)^2;
-kernelMatrix = zeros(numEle*10,numLanM*10+1);
-for i = 1:size(trainFreeman,1),
-    for j = 1:size(lanFreeman,1),
-        d = EditDistanceWeight(trainFreeman{i,1},lanFreeman{j,1},weightMatrix);
-        kernelMatrix(i,j) = exp(-d^2/sigma);
-            %kernelMatrix(i,j) = d;
-    end
-    kernelMatrix(i,end) = trainData(i,end);
-end
-landmarkFlag=zeros(size(trainData,1),1);
-worstExample = zeros(iteration,numPixel*numPixel+2);
+optimalWeight = zeros(9,9);
 for m = 1:iteration,
+    sigma = (2.36)^2;
+    kernelMatrix = zeros(numEle*10,numLanM*10+1);
+    for i = 1:size(trainFreeman,1),
+       for j = 1:size(lanFreeman,1),
+            d = EditDistanceWeight(trainFreeman{i,1},lanFreeman{j,1},weightMatrix);
+            kernelMatrix(i,j) = exp(-d^2/sigma);
+            %kernelMatrix(i,j) = d;
+       end
+       kernelMatrix(i,end) = trainData(i,end);
+    end
+    
     training_label_vector = kernelMatrix(:,end);
     training_instance_matrix = kernelMatrix(:,1:end-1);
     %normalize the matrix based on features
@@ -140,9 +129,9 @@ for m = 1:iteration,
     model = train(training_label_vector,training_instance_matrix,'-s 1 -c 1');
     [predict_label,accuracy,dec_values] = predict(training_label_vector,training_instance_matrix,model);
     accuracyArray(m) = accuracy(1);
-    if(accuracy(1)>maxAccuracy),
-        maxAccuracy = accuracy(1);       
-        %optimalWeight = weightMatrix;
+    if(accuracy(1)>minAccuracy),
+        minAccuracy = accuracy(1);       
+        optimalWeight = weightMatrix;
     end
     compare = [predict_label,training_label_vector];
     weights = model.w;
@@ -216,18 +205,18 @@ for m = 1:iteration,
             j = j+1;                
         end
     end
-     
-    %adjust the weight for all the examples together 
-    %weightCount = zeros(size(weightMatrix,1),size(weightMatrix,2));
+ 
     
-    %{
-    numExampleMatrix = zeros(size(weightMatrix,1),size(weightMatrix,2));
-    for k = 1:size(information,1),
-        current = information{k};
-        top_inc_lanM = current.top3_landmarks_for_incorrect_class_with_datapoint(1,:);
-        index_inc_lanM = current.index_top3_landmarks_for_incorrect_class;
-        top_corr_lanM = current.top3_landmarks_for_correct_class_with_datapoint(1,:);
-        index_cor_lanM = current.image_top3_landmarks_correct_with_datapoint;
+    %adjust the weight for all the examples together 
+  
+        weightCount = zeros(size(weightMatrix,1),size(weightMatrix,2));   
+        numExampleMatrix = zeros(size(weightMatrix,1),size(weightMatrix,2));
+        for k = 1:size(information,1),
+            current = information{k};
+            top_inc_lanM = current.top3_landmarks_for_incorrect_class_with_datapoint(1,:);
+            index_inc_lanM = current.index_top3_landmarks_for_incorrect_class;
+            top_corr_lanM = current.top3_landmarks_for_correct_class_with_datapoint(1,:);
+            index_cor_lanM = current.image_top3_landmarks_correct_with_datapoint;
         example = current.top3_landmarks_for_correct_class_with_datapoint(4,:);
         index_exam = current.index_example;    
         %tempWeigtMatrix = weightMatrix;
@@ -250,75 +239,14 @@ for m = 1:iteration,
                 numExampleMatrix(row,column) = numExampleMatrix(row,column) + 1;  
                 currentCount = currentCount + 1;
         end      
-    end
+    
     
     [B,IX] = sort(numExampleMatrix(:),'descend');
     [subRow,subColumn] = ind2sub(size(numExampleMatrix),IX(1));
     weightMatrix(subRow,subColumn) = weightMatrix(subRow,subColumn) + 2;
-    %}
     
-    %add examples to landmarks according to some rules. 
     
-    maxDifference = 0;
-    index_newLandmark = -1;
-    for k = 1:size(information,1)
-        current = information{k};
-       % top_inc_lanM = current.top3_landmarks_for_incorrect_class_with_datapoint(1,:);
-        index_inc_lanM = current.index_top3_landmarks_for_incorrect_class;
-        
-       % top_corr_lanM = current.top3_landmarks_for_correct_class_with_datapoint(1,:);
-        
-        index_cor_lanM = current.index_top3_landmarks_for_correct_class;
-        example = current.top3_landmarks_for_correct_class_with_datapoint(4,:);
-        
-        index_exam = current.index_example;    
-        editDistance_examInc = EditDistanceWeight(trainFreeman{index_exam,1},lanFreeman{index_inc_lanM(1),1},weightMatrix);
-        editDistance_examCor = EditDistanceWeight(trainFreeman{index_exam,1},lanFreeman{index_cor_lanM(1),1},weightMatrix);
-        if ((editDistance_examCor - editDistance_examInc)>maxDifference&&landmarkFlag(index_exam)==0),
-            maxDifference = editDistance_examCor - editDistance_examInc;
-            addLandmark = trainFreeman{index_exam,1};
-            addLandmark_class = trainData(index_exam,end);
-            index_newLandmark = index_exam;
-        end            
-    end
-    if(index_newLandmark>0)
-        landmarkFlag(index_newLandmark) = 1;
-        lanMatrix = [lanMatrix;trainData(index_newLandmark,:)];
-        lanIndex = [lanIndex;trainIndex(index_newLandmark)];
-        allLanIndex = [allLanIndex;trainIndex(index_newLandmark)];  
-        lanFreeman{size(lanFreeman,1)+1,1} = addLandmark;
-        %worstExample(iteration,:)=[testData(),current.true_label,current.predicted_label];
-        newDistanceArray = zeros(size(trainFreeman,1),1);
-        for i = 1:size(trainFreeman,1),
-            d = EditDistanceWeight(trainFreeman{i,1},addLandmark,weightMatrix);        
-            d = exp(-d^2/sigma);
-            newDistanceArray(i) = d;
-        end
-        kernelMatrix = [kernelMatrix(:,1:end-1),newDistanceArray,kernelMatrix(:,end)];
-    end
-    
-    %add landmarks randomly
-    %{
-    temp_Index = randsample(size(trainFreeman,1),1);
-    while(landmarkFlag(temp_Index)==1),
-        temp_Index = randsample(size(trainFreeman,1),1);
-    end
-    index_newLandmark = temp_Index;
-    landmarkFlag(index_newLandmark) = 1;
-     lanMatrix = [lanMatrix;trainData(index_newLandmark,:)];
-    lanIndex = [lanIndex;trainIndex(index_newLandmark)];
-    allLanIndex = [allLanIndex;trainIndex(index_newLandmark)]; 
-    addLandmark = trainFreeman{index_newLandmark,1};
-     addLandmark_class = trainData(index_newLandmark,end);
-     lanFreeman{size(lanFreeman,1)+1,1} = addLandmark;
-     newDistanceArray = zeros(size(trainFreeman,1),1);
-    for i = 1:size(trainFreeman,1),
-        d = EditDistanceWeight(trainFreeman{i,1},addLandmark,weightMatrix);        
-        d = exp(-d^2/sigma);
-        newDistanceArray(i) = d;
-    end
-    kernelMatrix = [kernelMatrix(:,1:end-1),newDistanceArray,kernelMatrix(:,end)];
-    %}
+    disp('iteration finish');
 end
 disp('finish');
 
