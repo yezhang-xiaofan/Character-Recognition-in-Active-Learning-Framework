@@ -78,12 +78,10 @@ Skeleton(10,10) = 1;
 Skeleton(11,10) = 1;
 Skeleton(12,10) = 1;
 [Graph,Nodes] = skeleton_to_dGraph(Skeleton);
-Sequences = [6,6,6,6,6,6,6,6,6,6,6,6,6,6,6];
+Sequences = [0,6,4,2];
 %[distance,WeightMatrix,operations,Conversion] = find_smallest_distance(Sequences,Graph,Nodes,weightMatrix);
 
-[distance,WeightMatrix,operations,Conversion] = find_shortest_distance_narrowDP(Sequences,...
-    Graph,Nodes,weightMatrix,5,20);
-
+[distance,WeightMatrix,operations,Conversion] = fast_shortest_distance_narrowDP(Sequences,Graph,Nodes,weightMatrix);
 %{
 Skeleton = zeros(28,28);
 Skeleton(10,10) = 1;
