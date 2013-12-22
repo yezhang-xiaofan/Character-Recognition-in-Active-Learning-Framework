@@ -1,6 +1,6 @@
 %Use the graph-based algorithm to train SVM
 numPixel = 28;
-numEle = 40;      %number of examples of each class
+numEle = 10;      %number of examples of each class
 initial_num_lanM = 2;     
 load('trainIndex.mat');
 load('trainData.mat');
@@ -9,7 +9,12 @@ load('LanIndex');
 load('LanMatrix');
 load('InitialSequences');
 addpath('/Users/zhangye/Documents/Study/cmu/study/research/handwritten/');
-
+smallData = zeros(10*numEle,28*28+1);
+for i = 1:10,
+    smallData((i-1)*numEle+1:(i-1)*...
+        numEle+numEle,:) = trainData((i-1)*40+1:(i-1)*40+numEle,:);
+end
+trainData = smallData;
 %convert the training instances into graph
 training_Graph = {};
 for i = 1:size(trainData,1),  
@@ -30,15 +35,20 @@ weightMatrix = [0.00,6.31,7.22,8.61,8.61,9.71,7.14,6.82,3.38;
                 6.16,7.37,7.77,15,15,8.47,5.83,0.00,2.78;
                 3.69,3.77,3.67,4.18,3.52,3.66,3.88,4.18,15];
             
-    threshold = 4;
+    threshold = 100;
     sigma = 1;
-    kernelMatrix = zeros(numEle*10,size(Sequences,2));
+    kernelMatrix = zeros(numEle*10,size(Sequences,2)+1);
     width = 3;
-    for i = 1:size(training_Graph,2),
-       for j = 1:size(Sequences,2),
+    for i = 1:40
+       for j = 9:10,
             tic;
-            distance = find_shortest_distance_narrowDP(Sequences{1,j},...
+            if(iscell(Sequences{1,j})==0)
+                distance = find_shortest_distance_narrowDP(Sequences{1,j},...
                 training_Graph{1,i}.Graph,training_Graph{1,i}.Nodes,weightMatrix,threshold,width);
+            else
+                distance = find_shortest_distance_narrowDP_twoSeq(Sequences{1,j},...
+                training_Graph{1,i}.Graph,training_Graph{1,i}.Nodes,weightMatrix,threshold,width);
+            end
             %kernelMatrix(i,j) = exp(-distance^2/sigma);
             toc;
             kernelMatrix(i,j) = distance;
@@ -46,17 +56,26 @@ weightMatrix = [0.00,6.31,7.22,8.61,8.61,9.71,7.14,6.82,3.38;
        kernelMatrix(i,end) = trainData(i,end);
     end
     
-    training_label_vector = kernelMatrix(:,end);
-    training_instance_matrix = kernelMatrix(:,1:end-1);
-    %normalize the matrix based on features
-    %training_instance_matrix = normc(training_instance_matrix);
-    training_instance_matrix = normr(training_instance_matrix);
-    training_instance_matrix = sparse(training_instance_matrix);
-
-    %L1-Loss SVM 
-    model = train(training_label_vector,training_instance_matrix,'-s 1 -c 1');
-    [predict_label,accuracy,dec_values] = predict(training_label_vector,training_instance_matrix,model);
-    accuracyArray(m) = accuracy(1);
+    newKernel = kernelMatrix;
+    newKernel (find(kernelMatrix==inf)) = 400;
+     mean = sum(sum(newKernel(:,1:end-1)))/(size(newKernel,1)*(size(kernelMatrix,2)-1));
+    optional_Sigma = [mean, mean/2, mean*2, mean/4, mean*4];
+      opt_accuracy = 0;
+        for i = 1:length(optional_Sigma),
+            opt_Sigma = optional_Sigma(i);
+           %opt_Sigma = 2.55;
+            training_label_vector = newKernel(:,end);
+            training_instance_matrix = newKernel(:,1:end-1);
+            training_instance_matrix = exp(-(training_instance_matrix.^2)/(opt_Sigma));
+            training_instance_matrix = normr(training_instance_matrix);
+            training_instance_matrix = sparse(training_instance_matrix);        
+            model = train(training_label_vector,training_instance_matrix,'-s 1 -c 1'); 
+            [predict_label,accuracy,dec_values] = predict(training_label_vector,training_instance_matrix,model);
+            if(accuracy(1)>opt_accuracy),
+                opt_accuracy = accuracy(1);
+               % accuracy_Array(m) = accuracy(1);               
+            end
+        end   
     if(accuracy(1)>minAccuracy),
         minAccuracy = accuracy(1);       
         optimalWeight = weightMatrix;

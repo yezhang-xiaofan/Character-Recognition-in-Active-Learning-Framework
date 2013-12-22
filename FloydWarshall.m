@@ -15,7 +15,6 @@ for i = 1:num_Nodes,
     for j = 1:num_Nodes,
         if(Neighbors(j)==1),
             dist(i,j) = 0;
-            next(i,j) = 0;
         end
     end
 end

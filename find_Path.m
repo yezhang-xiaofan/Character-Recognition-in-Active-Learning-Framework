@@ -8,13 +8,10 @@ if dist(i,j) == inf,
     return;
 end
 intermediate = next(i,j);
-if(intermediate == 0),       %i and j are neighbors
-    return;
-end
-if(intermediate==inf),
-    Path = inf;
+if(intermediate == inf),       %i and j are neighbors
     return;
 else
+
     Path = [find_Path(i,intermediate,next,dist),intermediate,find_Path(intermediate,j,next,dist)];
     return;
 end

@@ -83,8 +83,8 @@ delete_Table(1) = Weight(Sequence(1)+1,9);
 norm_delete_Table(1) = delete_Table(1);
 for i = 2:length_Seq,
     delete_Table(i) = delete_Table(i-1) + Weight(Sequence(i)+1,9);
-    norm_delete_Table(i) = delete_Table(i)/i;
-    if(norm_delete_Table(i)>threshold),
+    %norm_delete_Table(i) = delete_Table(i)/i;
+    if(delete_Table(i)>threshold),
         break;
     end
 end
@@ -115,7 +115,7 @@ for i = 2:2+width,
             SeqtoSingle(1,j,i) = cost1;
             Opt_SeqtoSingle{1,j,i} = [Opt_SeqtoSingle{1,j,i-1},-i];
         end
-       if(SeqtoSingle(1,j,i)/length(Opt_SeqtoSingle{1,j,i}) > threshold),
+       if(SeqtoSingle(1,j,i) > threshold),
            SeqtoSingle(1,j,i) = inf;
            Opt_SeqtoSingle{1,j,i} = inf;
        end
@@ -128,12 +128,12 @@ tic;
 SingletoPair = inf(num_Nodes,num_Nodes,length_Seq);
 path_SingletoPair = cell(num_Nodes,num_Nodes,length_Seq);
 opt_SingletoPair = cell(num_Nodes,num_Nodes,length_Seq);
-norm_SingletoPair = zeros(num_Nodes,num_Nodes,length_Seq);
+%norm_SingletoPair = zeros(num_Nodes,num_Nodes,length_Seq);
 for k = 1:length_Seq,
     Seq = Sequence(k);
     for m = 1:size(order_Pair,1),
         %*******************************%
-        if(order_Pair(m,3)>width),
+        if(order_Pair(m,3)>width+1),
             break;
         end
         i = order_Pair(m,1);
@@ -190,8 +190,8 @@ for k = 1:length_Seq,
                end
            end
            SingletoPair(i,j,k) = min_Cost; 
-           norm_SingletoPair(i,j,k) = min_Cost/length(opt_SingletoPair{i,j,k});
-           if(norm_SingletoPair(i,j,k) > threshold),
+           %norm_SingletoPair(i,j,k) = min_Cost/length(opt_SingletoPair{i,j,k});
+           if(SingletoPair(i,j,k) > threshold),
                SingletoPair(i,j,k) = inf;
                path_SingletoPair{i,j,k} = inf;
                opt_SingletoPair{i,j,k} = inf;                 
@@ -242,7 +242,8 @@ for k = 2:length_Seq,
                     cost = SeqtoSingle(1,i,k) + Distance_Matrix(i,j) + Weight(9,end_Node+1);
                     if(cost<min_Cost),
                         min_Cost = cost;
-                        temp_Path = path{i,j};
+                        
+                        pathMatrix{i,j,k} = path{i,j};
                         Opt_Path{i,j,k} = [Opt_SeqtoSingle{1,p,k},Nodes(path{p,j}),end_Node];
                     end
                 %(S_1,S_2....S_k ->B) + d(A-B) + insert(A)
@@ -250,7 +251,8 @@ for k = 2:length_Seq,
                     cost = Weight(9,start_Node+1) + Distance_Matrix(i,j) + SeqtoSingle(1,j,k);
                     if(cost<min_Cost),
                         min_Cost = cost;
-                        temp_Path = path{i,j};
+                      
+                        pathMatrix{i,j,k} = path{i,j};
                         Opt_Path{i,j,k} = [start_Node,Nodes(path{i,j}),Opt_SeqtoSingle{1,p,k}];
                     end
                 %insert(A) + d(A-C) + (S_1,S_2,...S_k ->C) + d(C-B) +
@@ -260,13 +262,13 @@ for k = 2:length_Seq,
                         SeqtoSingle(1,p,k) + Distance_Matrix(i,p) + Distance_Matrix(p,j);
                     if(cost<min_Cost)
                         min_Cost = cost;                      
-                        temp_Path = [path{i,p},p,path{p,j}];
+                        pathMatrix{i,j,k} = [path{i,p},p,path{p,j}];
                         Opt_Path{i,j,k} = [start_Node,Nodes(path{i,p}),Opt_SeqtoSingle{1,p,k},...
                             Nodes(path{p,j}),end_Node];
                     end
                 end                              
-            end
-            pathMatrix{i,j,k} = temp_Path; 
+            end 
+            
             DistanceMatrix(i,j,k) = min_Cost;
             
             %consider two median nodes
@@ -314,8 +316,15 @@ for k = 2:length_Seq,
                 end
             end            
             DistanceMatrix(i,j,k) = min_Cost;
+            
+            %delete(S_k) + (S_1,S_2,...,S_k-1 -> AB)
+            if(DistanceMatrix(i,j,k-1) + Weight(Sequence(k)+1,9)<min_Cost),
+                DistanceMatrix(i,j,k) = DistanceMatrix(i,j,k-1) + Weight(Sequence(k)+1,9);
+                pathMatrix{i,j,k} = [pathMatrix{i,j,k-1}];
+                Opt_Path{i,j,k} = [Opt_Path{i,j,k-1},-k];
+            end
             %************************%
-            if((DistanceMatrix(i,j,k)/length(Opt_Path{i,j,k}))>threshold),
+            if(DistanceMatrix(i,j,k)>threshold),
                 DistanceMatrix(i,j,k) = inf;
                 Opt_Path{i,j,k} = inf;
                 pathMatrix{i,j,k} = inf;
@@ -326,6 +335,7 @@ toc;
 
 %calculate shortest distance in DistanceMatrix{i,j,k}
 %S_1,S_2,...,S_k -> AB
+k = length_Seq;
 min_Cost = inf;
 Opt_whole = [];
 for m = 1:size(order_Pair,1),
@@ -374,7 +384,7 @@ for m = 1:size(order_Pair,1),
                     two_optional_array = table_Nodes.get(key_Nodes);
                     first_Node = two_optional_array.get(0);
                     second_Node = two_optional_array.get(1);
-                    if(Weight(9,first_Node+1)<Weight(9,first_Node+1)),
+                    if(Weight(9,first_Node+1)<Weight(9,second_Node+1)),
                         cost_insert = cost_insert + Weight(9,first_Node+1);
                         new_index_insert = [new_index_insert,first_Node];
                     else
@@ -383,9 +393,9 @@ for m = 1:size(order_Pair,1),
                     end
                 end          
             end        
-            if(DistanceMatrix(i,j,k)/(length(Opt_Path{i,j,k}))+...
+            if(DistanceMatrix(i,j,k)+...
                     cost_insert < min_Cost)
-                min_Cost = DistanceMatrix(i,j,k)/length(Opt_Path{i,j,k})+...
+                min_Cost = DistanceMatrix(i,j,k)+...
                     cost_insert;
                 start_Node = i;
                 end_Node = j;
