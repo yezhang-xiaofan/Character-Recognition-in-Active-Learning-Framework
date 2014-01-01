@@ -91,7 +91,7 @@ iteration = 50;
 accuracyArray = zeros(1,iteration);
 minAccuracy = 0.0;
 
-%{
+
 weightMatrix = [0.00,6.31,7.22,8.61,8.61,9.71,7.14,6.82,3.38;
                 6.28,0.00,6.09,9.27,15,8.58,8.17,8.17,3.18;               
                 7.14,6.20,0.00,6.77,7.39,9.34,8.24,8.24,3.22;
@@ -101,17 +101,18 @@ weightMatrix = [0.00,6.31,7.22,8.61,8.61,9.71,7.14,6.82,3.38;
                 7.14,9.34,8.65,8.65,8.24,5.76,0.00,6.70,3.34;
                 6.16,7.37,7.77,15,15,8.47,5.83,0.00,2.78;
                 3.69,3.77,3.67,4.18,3.52,3.66,3.88,4.18,15];
-%}
 
-load('sampleddata1/optAutoWeight1.mat');
-weightMatrix = optimalWeight;
+
+%load('sampleddata1/optAutoWeight1.mat');
+%weightMatrix = optimalWeight;
 optimalWeight = zeros(9,9);
+threshold = inf;
 for m = 1:iteration,
     sigma = (2.36)^2;
     kernelMatrix = zeros(numEle*10,numLanM*10+1);
     for i = 1:size(trainFreeman,1),
        for j = 1:size(lanFreeman,1),
-            d = EditDistanceWeight(trainFreeman{i,1},lanFreeman{j,1},weightMatrix);
+            d = EditDistanceWeight(trainFreeman{i,1},lanFreeman{j,1},weightMatrix,threshold);
             kernelMatrix(i,j) = exp(-d^2/sigma);
             %kernelMatrix(i,j) = d;
        end
@@ -217,17 +218,17 @@ for m = 1:iteration,
             index_inc_lanM = current.index_top3_landmarks_for_incorrect_class;
             top_corr_lanM = current.top3_landmarks_for_correct_class_with_datapoint(1,:);
             index_cor_lanM = current.image_top3_landmarks_correct_with_datapoint;
-        example = current.top3_landmarks_for_correct_class_with_datapoint(4,:);
-        index_exam = current.index_example;    
+            example = current.top3_landmarks_for_correct_class_with_datapoint(4,:);
+            index_exam = current.index_example;    
         %tempWeigtMatrix = weightMatrix;
-        incorrSequence = findPathWeight(trainFreeman{index_exam,1},lanFreeman{index_inc_lanM(1),1},weightMatrix);
-        incorrSequence = sortrows(incorrSequence,3);
+            incorrSequence = findPathWeight(trainFreeman{index_exam,1},lanFreeman{index_inc_lanM(1),1},weightMatrix,threshold);
+            incorrSequence = sortrows(incorrSequence,3);
         %corrSequence = findPathWeight(trainFreeman(index_exam,:),lanFreeman(index_cor_lanM(1),:),tempWeigtMatrix);
         %corrSequence = sortrows(corrSequence,-3);  
         %tempExampleMatrix = zeros(size(weightMatrix,1),size(weightMatrix,2));
-        numCount = 6;
-        currentCount = 0;
-        for i = 1:size(incorrSequence,1),
+            numCount = 6;
+            currentCount = 0;
+            for i = 1:size(incorrSequence,1),
                 if(currentCount>numCount),
                     break;
                 end
@@ -238,8 +239,8 @@ for m = 1:iteration,
                 column = incorrSequence(i,2);
                 numExampleMatrix(row,column) = numExampleMatrix(row,column) + 1;  
                 currentCount = currentCount + 1;
-        end      
-    
+            end      
+        end
     
     [B,IX] = sort(numExampleMatrix(:),'descend');
     [subRow,subColumn] = ind2sub(size(numExampleMatrix),IX(1));
@@ -247,8 +248,9 @@ for m = 1:iteration,
     
     
     disp('iteration finish');
-end
+end       
 disp('finish');
+
 
 
 

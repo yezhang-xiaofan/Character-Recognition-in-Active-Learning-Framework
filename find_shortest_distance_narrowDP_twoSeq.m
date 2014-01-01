@@ -52,11 +52,11 @@ table_Nodes = java.util.Hashtable;
     Sequence2 = Sequences{1,2};
     
     if(length(Sequence1)<length(Sequence2)),
-        Sequences{1,1} = Sequence1;
-        Sequences{1,2} = Sequence2;
-    else
         Sequences{1,1} = Sequence2;
         Sequences{1,2} = Sequence1;
+    else
+        Sequences{1,1} = Sequence1;
+        Sequences{1,2} = Sequence2;
     end
 
 information = {};
@@ -217,6 +217,7 @@ for l = 1:size(Sequences,2),
     toc;
 
     tic;
+    
     %obtain the distance of S_1,S_2..S_k -> AB
     DistanceMatrix = inf(num_Nodes,num_Nodes,length_Seq);
     pathMatrix = cell(num_Nodes,num_Nodes,length_Seq);
@@ -388,8 +389,90 @@ Opt_whole = [];
     end
     
     
+% greedy algorithm
+
+
+min_Cost = inf;
+%length_path1 = -1;
+%length_path2 = -1;
+
+temp_matrix1 = DistanceMatrix1(:,:,length_Seq1);
+[shortest_dist1,index1] = sort(temp_matrix1(:),'ascend');
+[i1,j1] = ind2sub(size(DistanceMatrix1),index1(1));
+ temp_Node1 = [pathMatrix1{i1,j1,length_Seq1},i1,j1];
+     
+ for n = size(order_Pair,1):-1:1,
+     flag_Hash = java.util.Hashtable;
+    for q = 1:2:num_Nodes,
+        flag_Hash.put(q,0);
+    end
+          i2 = order_Pair(n,1);
+           j2 = order_Pair(n,2);
+            if(DistanceMatrix2(i2,j2,length_Seq2) ==inf || i2 == i1 || j2 == j1),
+                continue;
+            end
+            if(order_Pair(n,3)<length_Seq2-width || order_Pair(n,3) > length_Seq2 + width),
+                 continue;               
+            end          
+            temp_Node2 = [pathMatrix2{i2,j2,length_Seq2},i2,j2];
+            if (isempty(intersect(temp_Node1,temp_Node2))==0),
+                continue;                     
+            end
+            %length_path2 = order_Pair(m,3);                     
+            temp_Node = [temp_Node1,temp_Node2];
+            for p = 1:length(temp_Node),
+                if(mod(temp_Node(p),2)==0),
+                      key_Node = temp_Node(p) - 1;
+                else
+                      key_Node = temp_Node(p);
+                end
+                flag_Hash.put(key_Node,1);
+            end
+        
+        %hashtable is used to check which nodes are already on the path
+        
+                %indices of vertices that need to be inserted
+            index_insert = setdiff(1:num_Nodes,temp_Node);      
+            cost_insert = 0;
+           new_index_insert = zeros(1,num_Nodes);
+            num_Insert = 0;
+                %insert all nodes in the 'insert_Node'. 
+                %If the same edge in the original image is already on the path,
+                %don't consider the opposite direction
+                for p = 1:length(index_insert),
+                    if(mod(index_insert(p),2) == 0),
+                        key_Nodes = index_insert(p) - 1;
+                    else
+                        key_Nodes = index_insert(p);
+                    end        
+                    if(flag_Hash.get(key_Nodes)==0),
+                        flag_Hash.put(key_Nodes,1);
+                        two_optional_array = table_Nodes.get(key_Nodes);
+                        first_Node = two_optional_array.get(0);
+                        second_Node = two_optional_array.get(1);
+                        if(Weight(9,first_Node+1)<Weight(9,second_Node+1)),
+                            cost_insert = cost_insert + Weight(9,first_Node+1);
+                            num_Insert = num_Insert + 1;
+                            new_index_insert(num_Insert) = first_Node;
+                            
+                        else
+                            cost_insert = cost_insert + Weight(9,second_Node+1);
+                            num_Insert = num_Insert + 1;
+                            new_index_insert(num_Insert) = second_Node;
+                            
+                        end
+                    end          
+                end   
+         if(( DistanceMatrix1(i1,j1,length_Seq1)+DistanceMatrix2(i2,j2,length_Seq2)+...
+                        cost_insert)< min_Cost)
+            min_Cost = DistanceMatrix1(i1,j1,length_Seq1)+DistanceMatrix2(i2,j2,length_Seq2)+...
+                        cost_insert;
+         end
+     end
+
+   
     
-    
+    %{
     for m = 1:size(order_Pair,1),
         if(order_Pair(m,3)<length_Seq1-width || order_Pair(m,3)>length_Seq1+width),
             continue;
@@ -418,7 +501,7 @@ Opt_whole = [];
         end
         %}
         temp_Node2 = [];
-        for n = 1:size(order_Pair,1),
+        for n = m:size(order_Pair,1),
             i2 = order_Pair(n,1);
             j2 = order_Pair(n,2);
             if(n<=m || order_Pair(n,3)<length_Seq2-width || order_Pair(n,3) > length_Seq2 + width),
@@ -444,7 +527,7 @@ Opt_whole = [];
         %hashtable is used to check which nodes are already on the path
         
                 %indices of vertices that need to be inserted
-            index_insert = setdiff(1:num_Nodes,[temp_Node1,temp_Node2]);      
+            index_insert = setdiff(1:num_Nodes,temp_Node);      
             cost_insert = 0;
             new_index_insert = zeros(1,num_Nodes);
             num_Insert = 0;
@@ -475,16 +558,17 @@ Opt_whole = [];
                         end
                     end          
                 end   
-                new_index_insert = new_index_insert(1:num_Insert);
+                %new_index_insert = new_index_insert(1:num_Insert);
                 if(DistanceMatrix1(i1,j1,length_Seq1)+DistanceMatrix2(i2,j2,length_Seq2)+...
                         cost_insert < min_Cost)
                     min_Cost = DistanceMatrix1(i1,j1,length_Seq1)+...
                         DistanceMatrix2(i2,j2,length_Seq2) + cost_insert;                 
-                    Opt_whole = [Opt_Path{i1,j1,length_Seq1},Opt_Path{i2,j2,length_Seq2},...
-                        Nodes(new_index_insert)];
+                    %Opt_whole = [Opt_Path{i1,j1,length_Seq1},Opt_Path{i2,j2,length_Seq2},...
+                    %    Nodes(new_index_insert)];
                 end
         end
     end
+    %}
 distance = min_Cost;
 %{
 Operation = Opt_whole;

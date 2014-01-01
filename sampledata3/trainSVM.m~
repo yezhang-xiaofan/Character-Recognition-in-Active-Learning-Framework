@@ -39,7 +39,7 @@ weightMatrix = [0.00,6.31,7.22,8.61,8.61,9.71,7.14,6.82,3.38;
     sigma = 1;
     kernelMatrix = zeros(numEle*10,size(Sequences,2)+1);
     width = 3;
-    for i = 41:50
+    for i = 42:45
        for j = 9:10,
             tic;
             if(iscell(Sequences{1,j})==0)
